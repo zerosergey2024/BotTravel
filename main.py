@@ -12,7 +12,6 @@ from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
 
-
 # Загрузка переменных окружения
 load_dotenv()
 
@@ -22,7 +21,7 @@ PROXY_API_KEY = os.getenv("PROXY_API_KEY")
 # Инициализация асинхронного клиента OpenAI
 client = AsyncOpenAI(
     api_key=PROXY_API_KEY,
-    base_url="https://api.proxyapi.ru/openai/v1",  # Корректный эндпоинт
+    base_url="https://api.proxyapi.ru/openai/v1",
 )
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 BASE_WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"
@@ -46,9 +45,8 @@ def process_text_file(file_path):
         logging.error(f"Ошибка при чтении файла: {e}")
         return None
 
-@dp.message(F.content_type == "document")
+@router.message(F.content_type == "document")
 async def handle_docs(message: Message):
-    # Проверяем, что файл имеет расширение .txt
     if not message.document.file_name.endswith('.txt'):
         await message.answer("⚠ Пожалуйста, отправляйте текстовые файлы (.txt).")
         return
@@ -60,18 +58,13 @@ async def handle_docs(message: Message):
     os.makedirs("downloads", exist_ok=True)
 
     try:
-        # Скачиваем файл как BytesIO
         downloaded_file = await bot.download_file(file_info.file_path)
-
-        # Убедимся, что это BytesIO
         if not hasattr(downloaded_file, 'getvalue'):
             raise ValueError("Скачанный файл не является объектом BytesIO")
 
-        # Сохраняем содержимое в файл
         with open(file_path, "wb") as new_file:
-            new_file.write(downloaded_file.getvalue())  # Используем .getvalue() для получения байтов
+            new_file.write(downloaded_file.getvalue())
 
-        # Обрабатываем текстовый файл
         content = process_text_file(file_path)
         if content is None:
             await message.answer("❌ Не удалось обработать файл.")
@@ -92,71 +85,68 @@ async def handle_docs(message: Message):
         logging.error(f"Ошибка при обработке файла: {e}")
         await message.answer("⚠ Произошла ошибка при обработке файла.")
 
-@dp.message(Command("instructions"))
+@router.message(Command("instructions"))
 async def show_instructions(message: Message):
     user_id = message.from_user.id
     instructions = user_data.get(user_id, {}).get("instructions", "Инструкция не загружена.")
     await message.answer(f"Ваши инструкции:\n{instructions}")
 
-@dp.message(Command("knowledge"))
+@router.message(Command("knowledge"))
 async def show_knowledge(message: Message):
     user_id = message.from_user.id
     knowledge = user_data.get(user_id, {}).get("knowledge", "База знаний не загружена.")
     await message.answer(f"Ваша база знаний:\n{knowledge}")
 
-# Остальная логика бота (погода, перевод, AI)
-
 @router.message(Command("start"))
 async def start_command(message: Message):
-    await message.answer("Привет! Я ваш AI-помощник в путешествии и делах. Задайте любой вопрос или воспользуйтесь кнопками.")
-
+    await message.answer(
+        "Привет! Я ваш AI-помощник в путешествии и делах. Задайте любой вопрос или воспользуйтесь кнопками.",
+        reply_markup=main_keyboard()
+    )
 
 class Form(StatesGroup):
     weather = State()
     translate = State()
 
-
-# Клавиатура с основными кнопками
 def main_keyboard():
     builder = ReplyKeyboardBuilder()
     builder.add(types.KeyboardButton(text="🌤️ Погода"))
     builder.add(types.KeyboardButton(text="🌍 Перевод"))
     return builder.as_markup(resize_keyboard=True)
 
-
-# Клавиатура для отмены действия
 def cancel_keyboard():
     builder = ReplyKeyboardBuilder()
     builder.add(types.KeyboardButton(text="❌ Отмена"))
     return builder.as_markup(resize_keyboard=True)
 
-@dp.message(F.text == "❌ Отмена")
+@router.message(F.text == "❌ Отмена")
 async def cancel_handler(message: Message, state: FSMContext):
     await state.clear()
     await message.answer("Действие отменено", reply_markup=main_keyboard())
 
-
-@dp.message(F.text == "🌤️ Погода")
+@router.message(F.text == "🌤️ Погода")
 async def weather_handler(message: Message, state: FSMContext):
     await state.set_state(Form.weather)
     await message.answer(
         "Введите название города:",
         reply_markup=cancel_keyboard()
     )
-@dp.message(F.text == "🌍 Перевод")
+
+@router.message(F.text == "🌍 Перевод")
 async def translate_handler(message: Message, state: FSMContext):
     await state.set_state(Form.translate)
     await message.answer(
         "Введите текст для перевода:",
         reply_markup=cancel_keyboard()
     )
-@dp.message(Form.weather)
+
+@router.message(Form.weather)
 async def get_weather(message: Message, state: FSMContext):
     city = message.text
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(
-                    f"{BASE_WEATHER_URL}?q={city}&appid={WEATHER_API_KEY}&units=metric&lang=ru"
+                f"{BASE_WEATHER_URL}?q={city}&appid={WEATHER_API_KEY}&units=metric&lang=ru"
             ) as response:
                 data = await response.json()
 
@@ -185,8 +175,7 @@ async def get_weather(message: Message, state: FSMContext):
         await state.clear()
         await message.answer("Выберите действие:", reply_markup=main_keyboard())
 
-
-@dp.message(Form.translate)
+@router.message(Form.translate)
 async def translate_text(message: Message, state: FSMContext):
     text = message.text
     try:
@@ -206,11 +195,9 @@ async def translate_text(message: Message, state: FSMContext):
         await state.clear()
         await message.answer("Выберите действие:", reply_markup=main_keyboard())
 
-
 @router.message()
 async def handle_message(message: Message):
     try:
-        # Формирование запроса к нейросети
         completion = await client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
@@ -220,18 +207,14 @@ async def handle_message(message: Message):
             temperature=0.7,
             max_tokens=500
         )
-        # Отправка ответа пользователю
         await message.answer(completion.choices[0].message.content)
-
     except Exception as e:
         logging.error(f"Ошибка: {str(e)}")
         await message.answer("⚠️ Произошла ошибка при обработке запроса.")
 
-
 async def main():
     dp.include_router(router)
     await dp.start_polling(bot)
-
 
 if __name__ == "__main__":
     logging.basicConfig(
