@@ -11,6 +11,7 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
+from aiogram.types import FSInputFile
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -99,8 +100,11 @@ async def show_knowledge(message: Message):
 
 @router.message(Command("start"))
 async def start_command(message: Message):
-    await message.answer(
-        "Привет! Я ваш AI-помощник в путешествии и делах. Задайте любой вопрос или воспользуйтесь кнопками.",
+    photo = FSInputFile('img/ФотоБот1.jpg')
+
+    await message.answer_photo(
+        photo=photo,
+        caption="Привет! Я ваш AI-помощник в путешествии и делах. Задайте любой вопрос или воспользуйтесь кнопками.",
         reply_markup=main_keyboard()
     )
 
