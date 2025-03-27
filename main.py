@@ -16,7 +16,7 @@ from aiogram.types import FSInputFile
 # Загрузка переменных окружения
 load_dotenv()
 
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_BOT_TOKEN = '7566732703:AAGaMydhtb-7kY75cMnmxW876LxwH610lqo'
 PROXY_API_KEY = os.getenv("PROXY_API_KEY")
 
 # Инициализация асинхронного клиента OpenAI
@@ -54,9 +54,9 @@ async def handle_docs(message: Message):
 
     file_info = await bot.get_file(message.document.file_id)
     file_name = file_info.file_path.split('/')[-1]
-    file_path = f"downloads/{message.from_user.id}_{file_name}"
+    file_path = f"../aiBot_Travel/downloads/{message.from_user.id}_{file_name}"
 
-    os.makedirs("downloads", exist_ok=True)
+    os.makedirs("../aiBot_Travel/downloads", exist_ok=True)
 
     try:
         downloaded_file = await bot.download_file(file_info.file_path)
