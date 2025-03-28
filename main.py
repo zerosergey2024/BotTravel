@@ -16,7 +16,7 @@ from aiogram.types import FSInputFile
 # Загрузка переменных окружения
 load_dotenv()
 
-TELEGRAM_BOT_TOKEN = '7566732703:AAGaMydhtb-7kY75cMnmxW876LxwH610lqo'
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 PROXY_API_KEY = os.getenv("PROXY_API_KEY")
 
 # Инициализация асинхронного клиента OpenAI
