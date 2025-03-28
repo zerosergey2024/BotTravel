@@ -1,7 +1,13 @@
-@router.message(Command("start"))
-async def start_command(message: Message):
-    photo ='img/ФотоБот1.jpg'
-    await message.answer(
-        "Привет! Я ваш AI-помощник в путешествии и делах. Задайте любой вопрос или воспользуйтесь кнопками.",
-        reply_markup=main_keyboard()
-    )
+import telebot
+
+# Замените 'YOUR_TOKEN' на токен вашего бота
+bot = telebot.TeleBot('6595307629:AAFAsYFZ3AmYUDeu8SxTLDFUTtMVE5XyohY')
+
+# Обработчик всех сообщений
+@bot.message_handler(func=lambda message: True)
+def echo_all(message):
+    # Отправляем обратно то же сообщение, которое получили
+    bot.reply_to(message, message.text)
+
+# Запуск бота
+bot.polling()
