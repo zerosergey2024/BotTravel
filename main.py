@@ -12,7 +12,6 @@ from aiogram.fsm.state import StatesGroup, State
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
 from openai import AsyncOpenAI
 from dotenv import load_dotenv
-from tast import process_text_file  # Убедитесь, что файл tast.py существует и содержит нужную функцию
 from aiogram.fsm.storage.memory import MemoryStorage
 
 # Загрузка переменных окружения
@@ -48,7 +47,37 @@ client = AsyncOpenAI(
     base_url="https://api.proxyapi.ru/openai/v1",
 )
 
+def restore_user_data():
+    for file_name in os.listdir(DATA_DIR):
+        if not file_name.endswith('.txt'):
+            continue
+        try:
+            parts = file_name.replace('.txt', '').split('_')
+            if len(parts) != 2:
+                continue
+            data_type, user_id = parts
+            user_id = int(user_id)
+            with open(os.path.join(DATA_DIR, file_name), 'r', encoding='utf-8') as f:
+                content = f.read()
+
+            if user_id not in user_data:
+                user_data[user_id] = {"knowledge": "", "instruction": ""}
+            user_data[user_id][data_type] = content
+            logging.info(f"Восстановлены данные для user_id={user_id}, type={data_type}")
+        except Exception as e:
+            logging.error(f"Ошибка восстановления из файла {file_name}: {e}")
+
+
 user_data = {}
+
+def process_text_file(file_path):
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read().strip()
+        return content if content else None
+    except Exception as e:
+        logging.error(f"Ошибка чтения файла {file_path}: {e}")
+        return None
 
 # --- Работа с файлами ---
 def save_user_data(user_id: int, data_type: str, content: str):
@@ -150,10 +179,10 @@ async def handle_document(message: Message):
         await message.answer("⚠ Произошла ошибка при обработке файла")
 
 @router.message(Command("instruction"))
-async def show_instructions(message: Message):
+async def show_instruction(message: Message):
     user_id = message.from_user.id
-    instructions = user_data.get(user_id, {}).get("instruction", "Инструкция не загружена.")
-    await message.answer(f"Ваша инструкция:\n{instructions}")
+    instruction = user_data.get(user_id, {}).get("instruction", "Инструкция не загружена.")
+    await message.answer(f"Ваша инструкция:\n{instruction}")
 
 @router.message(Command("knowledge"))
 async def show_knowledge(message: Message):
@@ -237,7 +266,8 @@ async def handle_message(message: Message):
     knowledge = user_context.get("knowledge", "")
 
     try:
-        system_message = "Отвечай информативно и соблюдай требования инструкции."
+        system_message = ("Ты туристический AI-гид. Ты ОБЯЗАН строго следовать структуре инструкций.")
+
         if instructions:
             system_message += f"\nИнструкция: {instructions}"
         if knowledge:
@@ -267,4 +297,5 @@ if __name__ == "__main__":
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
+    restore_user_data()
     asyncio.run(main())
