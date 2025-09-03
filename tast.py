@@ -21,6 +21,7 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 PROXY_API_KEY = os.getenv("PROXY_API_KEY")
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 
+7628701244:AAEKeWEqNZ0NZ7fINNsHJiuJbkLB780IMk4
 
 # Инициализация бота с кастомной сессией
 bot = Bot(token=TELEGRAM_BOT_TOKEN)

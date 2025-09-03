@@ -14,6 +14,14 @@ from openai import AsyncOpenAI
 from dotenv import load_dotenv
 from aiogram.fsm.storage.memory import MemoryStorage
 
+# Настройка логирования
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler()]
+)
+# ... (все импорты и настройки логирования) ...
+
 # Загрузка переменных окружения
 load_dotenv()
 
@@ -27,25 +35,36 @@ os.makedirs(DOWNLOADS_DIR, exist_ok=True)
 
 # Переменные окружения
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-PROXY_API_KEY = os.getenv("PROXY_API_KEY")
+API_KEY = os.getenv("API_KEY")
 WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
-BASE_WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"
+BASE_WEATHER_URL = "https://api.openweathermap.org/data/2.5/weather"  # ✅ без пробелов
 
-# Проверка токена
+# Проверка критичных переменных
 if not TELEGRAM_BOT_TOKEN:
-    logging.error("TELEGRAM_BOT_TOKEN не найден в переменных окружения!")
+    logging.error("❌ TELEGRAM_BOT_TOKEN не найден в переменных окружения!")
+    exit(1)
 else:
-    logging.info("TELEGRAM_BOT_TOKEN успешно загружен.")
+    logging.info("✅ TELEGRAM_BOT_TOKEN успешно загружен.")
 
-# Инициализация бота и клиентов
+if not WEATHER_API_KEY:
+    logging.warning("⚠️ WEATHER_API_KEY не найден — функции погоды отключены.")
+
+# Создание бота
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
+storage = MemoryStorage()
+dp = Dispatcher(storage=storage)
+
+# ✅ Создай роутер
 router = Router()
-dp = Dispatcher(storage=MemoryStorage())
 
 client = AsyncOpenAI(
-    api_key=PROXY_API_KEY,
-    base_url="https://api.proxyapi.ru/openai/v1",
+    api_key=API_KEY,
+    base_url="https://api.openai.com/v1",  # ✅ исправлено
 )
+
+# ✅ Объяви user_data до функций
+user_data = {}
+
 
 def restore_user_data():
     for file_name in os.listdir(DATA_DIR):
